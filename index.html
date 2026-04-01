@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🛗 电梯物体进入性检查</title>
+    <title>能进电梯吗？</title>
     <style>
         * {
             margin: 0;
@@ -59,6 +59,9 @@
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .input-row {
@@ -148,13 +151,17 @@
         .result-details h3 {
             color: #333;
             margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .detail-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 12px 0;
             border-bottom: 1px solid #e0e0e0;
+            align-items: center;
         }
 
         .detail-item:last-child {
@@ -163,11 +170,14 @@
 
         .detail-label {
             color: #666;
+            font-weight: 500;
         }
 
         .detail-value {
             font-weight: bold;
             color: #333;
+            text-align: right;
+            max-width: 60%;
         }
 
         .visualization {
@@ -192,12 +202,17 @@
             color: #555;
             margin-bottom: 10px;
             font-size: 1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
 
         .viz-box canvas {
             background: white;
             border-radius: 8px;
             width: 100%;
+            border: 1px solid #e0e0e0;
         }
 
         .emoji {
@@ -209,11 +224,31 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: rgba(17, 153, 142, 0.15);
+            color: #11998e;
+        }
+
+        .status-badge.fail {
+            background: rgba(235, 51, 73, 0.15);
+            color: #eb3349;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🛗 电梯物体进入性检查</h1>
+        <h1>🛗 能进电梯吗？</h1>
         
         <div class="main-content">
             <!-- 输入区域 -->
@@ -251,7 +286,7 @@
                 </div>
 
                 <div class="input-group">
-                    <h3><span class="input-icon">📦</span>物体尺寸 (长方体)</h3>
+                    <h3><span class="input-icon">📦</span>物体尺寸</h3>
                     <div class="input-row">
                         <div class="input-field">
                             <label>物体长 (cm)</label>
@@ -281,25 +316,25 @@
                 <div id="resultDetails" class="result-details" style="display: none;">
                     <h3>📋 详细信息</h3>
                     <div class="detail-item">
-                        <span class="detail-label"><span class="emoji">🚪</span>通过电梯门:</span>
+                        <span class="detail-label"><span class="emoji">🚪</span>通过电梯门</span>
                         <span class="detail-value" id="doorPass"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label"><span class="emoji">💡</span>通过方式:</span>
+                        <span class="detail-label"><span class="emoji">💡</span>进门方式</span>
                         <span class="detail-value" id="passMethod"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label"><span class="emoji">📦</span>放入轿厢:</span>
+                        <span class="detail-label"><span class="emoji">📦</span>放入轿厢</span>
                         <span class="detail-value" id="carFit"></span>
                     </div>
                     <div class="detail-item">
-                        <span class="detail-label"><span class="emoji">📐</span>放置方式:</span>
+                        <span class="detail-label"><span class="emoji">📐</span>摆放姿态</span>
                         <span class="detail-value" id="fitMethod"></span>
                     </div>
                 </div>
 
                 <div id="visualization" class="visualization" style="display: none;">
-                    <h3>🎨 可视化示意</h3>
+                    <h3 style="color: #333; margin-bottom: 15px;">🎨 可视化示意</h3>
                     <div class="viz-container">
                         <div class="viz-box">
                             <h4>🚪 通过电梯门 (侧视图)</h4>
@@ -354,17 +389,25 @@
         function canPassThroughDoor(objDims, door) {
             const [l, w, h] = objDims;
             const orientations = [
-                { name: '长×宽', d1: l, d2: w },
-                { name: '长×高', d1: l, d2: h },
-                { name: '宽×高', d1: w, d2: h },
+                { name: '长×宽', d1: l, d2: w, dimNames: ['长', '宽'] },
+                { name: '长×高', d1: l, d2: h, dimNames: ['长', '高'] },
+                { name: '宽×高', d1: w, d2: h, dimNames: ['宽', '高'] },
             ];
 
             for (const orient of orientations) {
                 if (orient.d1 <= door.width && orient.d2 <= door.height) {
-                    return { pass: true, method: `${orient.name} - 直接通过` };
+                    return { 
+                        pass: true, 
+                        method: `${orient.dimNames[0]}${orient.d1.toFixed(0)}cm × ${orient.dimNames[1]}${orient.d2.toFixed(0)}cm 朝向门`,
+                        simple: '直接通过'
+                    };
                 }
                 if (orient.d2 <= door.width && orient.d1 <= door.height) {
-                    return { pass: true, method: `${orient.name} - 旋转 90°通过` };
+                    return { 
+                        pass: true, 
+                        method: `${orient.dimNames[0]}${orient.d1.toFixed(0)}cm × ${orient.dimNames[1]}${orient.d2.toFixed(0)}cm 朝向门，旋转 90°`,
+                        simple: '旋转 90°通过'
+                    };
                 }
             }
 
@@ -374,10 +417,14 @@
             const minFaceDiagonal = Math.sqrt(sortedDims[0] ** 2 + sortedDims[1] ** 2);
 
             if (minFaceDiagonal <= doorDiagonal && sortedDims[0] <= door.width) {
-                return { pass: true, method: '最小面 - 斜向通过' };
+                return { 
+                    pass: true, 
+                    method: `最小面 (${sortedDims[0].toFixed(0)}×${sortedDims[1].toFixed(0)}cm) 斜向通过`,
+                    simple: '斜向通过'
+                };
             }
 
-            return { pass: false, method: null };
+            return { pass: false, method: null, simple: null };
         }
 
         // 检查能否放入轿厢
@@ -392,7 +439,7 @@
                 if (objSorted.every((o, i) => o <= carSorted[i])) {
                     return {
                         fit: true,
-                        method: `长=${rot[0].toFixed(0)}cm, 宽=${rot[1].toFixed(0)}cm, 高=${rot[2].toFixed(0)}cm`,
+                        method: `长${rot[0].toFixed(0)}cm × 宽${rot[1].toFixed(0)}cm × 高${rot[2].toFixed(0)}cm`,
                         rotation: rot
                     };
                 }
@@ -446,9 +493,16 @@
 
             // 显示详细信息
             document.getElementById('resultDetails').style.display = 'block';
-            document.getElementById('doorPass').textContent = doorResult.pass ? '✅ 可以通过' : '❌ 无法通过';
+            document.getElementById('doorPass').innerHTML = doorResult.pass 
+                ? '<span class="status-badge success">✅ 可以通过</span>' 
+                : '<span class="status-badge fail">❌ 无法通过</span>';
+            
             document.getElementById('passMethod').textContent = doorResult.method || '—';
-            document.getElementById('carFit').textContent = carResult.fit ? '✅ 可以放入' : '❌ 无法放入';
+            
+            document.getElementById('carFit').innerHTML = carResult.fit 
+                ? '<span class="status-badge success">✅ 可以放入</span>' 
+                : '<span class="status-badge fail">❌ 无法放入</span>';
+            
             document.getElementById('fitMethod').textContent = carResult.method || '—';
 
             // 显示可视化
@@ -468,9 +522,9 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const scale = Math.min(canvas.width / door.width, canvas.height / door.height) * 0.7;
+            const scale = Math.min(canvas.width / door.width, canvas.height / door.height) * 0.6;
             const centerX = canvas.width / 2;
-            const groundY = canvas.height - 20;
+            const groundY = canvas.height - 15;
 
             // 绘制门框
             ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
@@ -511,7 +565,7 @@
                     ctx.moveTo(centerX, groundY - doorH - 5);
                     ctx.lineTo(centerX, groundY - doorH / 2);
                     ctx.strokeStyle = '#27ae60';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 4;
                     ctx.stroke();
 
                     // 箭头头部
@@ -525,8 +579,9 @@
 
             // 标注
             ctx.fillStyle = '#333';
-            ctx.font = '12px sans-serif';
-            ctx.fillText(`门宽：${door.width.toFixed(0)}cm`, centerX - 40, groundY - 5);
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`门宽：${door.width.toFixed(0)}cm`, centerX, groundY + 18);
         }
 
         // 绘制轿厢俯视图
@@ -540,7 +595,7 @@
             const availH = canvas.height - padding * 2;
 
             // 使用轿厢的长和宽作为俯视图
-            const scale = Math.min(availW / car.length, availH / car.width) * 0.8;
+            const scale = Math.min(availW / car.length, availH / car.width) * 0.75;
 
             const carW = car.length * scale;
             const carH = car.width * scale;
@@ -563,7 +618,7 @@
                 const objX = startX + (carW - objL) / 2;
                 const objY = startY + (carH - objW) / 2;
 
-                ctx.fillStyle = 'rgba(235, 51, 73, 0.6)';
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.7)';
                 ctx.strokeStyle = '#c0392b';
                 ctx.lineWidth = 2;
                 ctx.fillRect(objX, objY, objL, objW);
@@ -571,16 +626,16 @@
 
                 // 标注物体尺寸
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${l.toFixed(0)}×${w.toFixed(0)}cm`, objX + objL/2, objY + objW/2 + 4);
+                ctx.fillText(`${l.toFixed(0)}×${w.toFixed(0)}cm`, objX + objL/2, objY + objW/2 + 5);
             }
 
             // 标注
             ctx.fillStyle = '#333';
-            ctx.font = '11px sans-serif';
+            ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`轿厢俯视：${car.length.toFixed(0)}×${car.width.toFixed(0)}cm`, canvas.width/2, canvas.height - 8);
+            ctx.fillText(`轿厢底面：${car.length.toFixed(0)}×${car.width.toFixed(0)}cm`, canvas.width/2, canvas.height - 8);
         }
 
         // 绘制轿厢侧视图
@@ -594,7 +649,7 @@
             const availH = canvas.height - padding * 2;
 
             // 使用轿厢的长和高作为侧视图
-            const scale = Math.min(availW / car.length, availH / car.height) * 0.8;
+            const scale = Math.min(availW / car.length, availH / car.height) * 0.75;
 
             const carW = car.length * scale;
             const carH = car.height * scale;
@@ -617,7 +672,7 @@
                 const objX = startX + (carW - objL) / 2;
                 const objY = groundY - objH;
 
-                ctx.fillStyle = 'rgba(235, 51, 73, 0.6)';
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.7)';
                 ctx.strokeStyle = '#c0392b';
                 ctx.lineWidth = 2;
                 ctx.fillRect(objX, objY, objL, objH);
@@ -625,16 +680,16 @@
 
                 // 标注
                 ctx.fillStyle = '#fff';
-                ctx.font = 'bold 11px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`高${h.toFixed(0)}cm`, objX + objL/2, objY + objH/2 + 4);
+                ctx.fillText(`高${h.toFixed(0)}cm`, objX + objL/2, objY + objH/2 + 5);
             }
 
             // 标注
             ctx.fillStyle = '#333';
-            ctx.font = '11px sans-serif';
+            ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`轿厢侧视：${car.length.toFixed(0)}×${car.height.toFixed(0)}cm`, canvas.width/2, canvas.height - 8);
+            ctx.fillText(`轿厢侧面：${car.length.toFixed(0)}×${car.height.toFixed(0)}cm`, canvas.width/2, canvas.height - 8);
         }
 
         // 绘制轿厢 3D 示意图
@@ -762,6 +817,12 @@
                 ctx.fill();
                 ctx.stroke();
             }
+
+            // 标注
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`轿厢：${car.length.toFixed(0)}×${car.width.toFixed(0)}×${car.height.toFixed(0)}cm`, centerX, centerY + carH + 45);
         }
 
         // 支持回车键触发
