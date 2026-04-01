@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>能进电梯吗？</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+        .input-section, .result-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .input-group { margin-bottom: 20px; }
+        .input-group h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .input-field { display: flex; flex-direction: column; }
+        .input-field label {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .input-field input {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        .input-field input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        .btn-check {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-check:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-check:active { transform: translateY(0); }
+        .result-box {
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .result-box.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .result-box.fail {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+        .result-box h2 { font-size: 1.8em; margin-bottom: 10px; }
+        .result-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result-details h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+            align-items: center;
+        }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-label { color: #666; font-weight: 500; }
+        .detail-value {
+            font-weight: bold;
+            color: #333;
+            text-align: right;
+            max-width: 60%;
+        }
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .viz-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .viz-box h4 {
+            color: #555;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        .viz-box canvas {
+            background: white;
+            border-radius: 8px;
+            width: 100%;
+            border: 1px solid #e0e0e0;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .status-badge.success {
+            background: rgba(17, 153, 142, 0.15);
+            color: #11998e;
+        }
+        .status-badge.fail {
+            background: rgba(235, 51, 73, 0.15);
+            color: #eb3349;
+        }
+        .note {
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            padding: 12px 15px;
+            margin-top: 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9em;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛗 能进电梯吗？</h1>
+        <div class="main-content">
+            <div class="input-section">
+                <div class="input-group">
+                    <h3>🚪 电梯门尺寸</h3>
+                    <div class="input-row">
+                        <div class="input-field">
+                            <label>门宽 (cm)</label>
+                            <input type="number" id="doorWidth" value="110" min="1" step="0.1">
+                        </div>
+                        <div class="input-field">
+                            <label>门高 (cm)</label>
+                            <input type="number" id="doorHeight" value="210" min="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <h3>📦 轿厢尺寸</h3>
+                    <div class="input-row">
+                        <div class="input-field">
+                            <label>轿厢长 (cm)</label>
+                            <input type="number" id="carLength" value="160" min="1" step="0.1">
+                        </div>
+                        <div class="input-field">
+                            <label>轿厢宽 (cm)</label>
+                            <input type="number" id="carWidth" value="140" min="1" step="0.1">
+                        </div>
+                        <div class="input-field">
+                            <label>轿厢高 (cm)</label>
+                            <input type="number" id="carHeight" value="220" min="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <h3>📦 物体尺寸</h3>
+                    <div class="input-row">
+                        <div class="input-field">
+                            <label>物体长 (cm)</label>
+                            <input type="number" id="objLength" value="" min="1" step="0.1">
+                        </div>
+                        <div class="input-field">
+                            <label>物体宽 (cm)</label>
+                            <input type="number" id="objWidth" value="" min="1" step="0.1">
+                        </div>
+                        <div class="input-field">
+                            <label>物体高 (cm)</label>
+                            <input type="number" id="objHeight" value="" min="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-check" onclick="checkElevator()">🔍 开始检查</button>
+                <div class="note">💡 支持 3D 空间任意角度旋转，不只是 90°倍数！</div>
+            </div>
+            <div class="result-section">
+                <div id="resultBox" class="result-box" style="display: none;">
+                    <h2 id="resultTitle"></h2>
+                    <p id="resultMessage"></p>
+                </div>
+                <div id="resultDetails" class="result-details" style="display: none;">
+                    <h3>📋 详细信息</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">🚪 通过电梯门</span>
+                        <span class="detail-value" id="doorPass"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">💡 进门方式</span>
+                        <span class="detail-value" id="passMethod"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">📦 放入轿厢</span>
+                        <span class="detail-value" id="carFit"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">📐 摆放姿态</span>
+                        <span class="detail-value" id="fitMethod"></span>
+                    </div>
+                </div>
+                <div id="visualization" class="visualization" style="display: none;">
+                    <h3 style="color: #333; margin-bottom: 15px;">🎨 可视化示意</h3>
+                    <div class="viz-container">
+                        <div class="viz-box">
+                            <h4>🚪 通过电梯门</h4>
+                            <canvas id="doorCanvas" width="280" height="220"></canvas>
+                        </div>
+                        <div class="viz-box">
+                            <h4>📦 轿厢俯视图</h4>
+                            <canvas id="carTopCanvas" width="280" height="220"></canvas>
+                        </div>
+                        <div class="viz-box">
+                            <h4>📦 轿厢侧视图</h4>
+                            <canvas id="carSideCanvas" width="280" height="220"></canvas>
+                        </div>
+                        <div class="viz-box">
+                            <h4>📦 轿厢 3D</h4>
+                            <canvas id="car3dCanvas" width="280" height="220"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div id="placeholder" style="text-align: center; padding: 60px 20px; color: #999;">
+                    <p style="font-size: 3em; margin-bottom: 20px;">👆</p>
+                    <p>在左侧输入尺寸，点击"开始检查"查看结果</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function getFaceOrientations(l, w, h) {
+            return [
+                { face: [l, w], third: h, name: '长×宽面', dims: [l, w], height: h },
+                { face: [w, l], third: h, name: '宽×长面', dims: [w, l], height: h },
+                { face: [l, h], third: w, name: '长×高面', dims: [l, h], height: w },
+                { face: [h, l], third: w, name: '高×长面', dims: [h, l], height: w },
+                { face: [w, h], third: l, name: '宽×高面', dims: [w, h], height: l },
+                { face: [h, w], third: l, name: '高×宽面', dims: [h, w], height: l }
+            ];
+        }
+        function getProjection(d1, d2, angleDeg) {
+            const angle = angleDeg * Math.PI / 180;
+            const cos = Math.abs(Math.cos(angle));
+            const sin = Math.abs(Math.sin(angle));
+            return {
+                projW: d1 * cos + d2 * sin,
+                projH: d1 * sin + d2 * cos
+            };
+        }
+        function canPassThroughDoor(objDims, door) {
+            const [l, w, h] = objDims;
+            const orientations = getFaceOrientations(l, w, h);
+            let bestSolution = null;
+            for (const orient of orientations) {
+                const [d1, d2] = orient.dims;
+                const height = orient.height;
+                if (height > door.height) continue;
+                if (d1 <= door.width && d2 <= door.height) {
+                    return {
+                        pass: true,
+                        method: `${orient.name} 朝向门，直接通过（${d1.toFixed(0)}×${d2.toFixed(0)}cm≤门，厚度${height.toFixed(0)}cm）`,
+                        angle: 0,
+                        dimensions: [d1, d2, height]
+                    };
+                }
+                if (d2 <= door.width && d1 <= door.height) {
+                    return {
+                        pass: true,
+                        method: `${orient.name} 朝向门，旋转 90°通过（${d2.toFixed(0)}×${d1.toFixed(0)}cm≤门，厚度${height.toFixed(0)}cm）`,
+                        angle: 90,
+                        dimensions: [d2, d1, height]
+                    };
+                }
+                for (let angle = 0; angle <= 90; angle += 0.5) {
+                    const proj = getProjection(d1, d2, angle);
+                    if (proj.projW <= door.width && proj.projH <= door.height) {
+                        if (angle > 0 && angle < 90) {
+                            return {
+                                pass: true,
+                                method: `${orient.name} 朝向门，倾斜${angle.toFixed(1)}°通过（投影${proj.projW.toFixed(1)}×${proj.projH.toFixed(1)}cm≤门，厚度${height.toFixed(0)}cm）`,
+                                angle: angle,
+                                projWidth: proj.projW,
+                                projHeight: proj.projH,
+                                dimensions: [d1, d2, height]
+                            };
+                        }
+                    }
+                }
+            }
+            return { pass: false, method: null, angle: null };
+        }
+        function canFitInCar(objDims, car) {
+            const carDims = [car.length, car.width, car.height];
+            const objSorted = [...objDims].sort((a, b) => a - b);
+            const carSorted = [...carDims].sort((a, b) => a - b);
+            const canFit = objSorted.every((o, i) => o <= carSorted[i]);
+            if (!canFit) return { fit: false, method: null, rotation: null };
+            const rotations = [
+                [objDims[0], objDims[1], objDims[2]],
+                [objDims[0], objDims[2], objDims[1]],
+                [objDims[1], objDims[0], objDims[2]],
+                [objDims[1], objDims[2], objDims[0]],
+                [objDims[2], objDims[0], objDims[1]],
+                [objDims[2], objDims[1], objDims[0]]
+            ];
+            for (const rot of rotations) {
+                if (rot[0] <= car.length && rot[1] <= car.width && rot[2] <= car.height) {
+                    return {
+                        fit: true,
+                        method: `${rot[0].toFixed(0)}×${rot[1].toFixed(0)}×${rot[2].toFixed(0)}cm`,
+                        rotation: rot
+                    };
+                }
+            }
+            return {
+                fit: true,
+                method: `${objSorted[0].toFixed(0)}×${objSorted[1].toFixed(0)}×${objSorted[2].toFixed(0)}cm`,
+                rotation: objSorted
+            };
+        }
+        function checkElevator() {
+            const door = {
+                width: parseFloat(document.getElementById('doorWidth').value),
+                height: parseFloat(document.getElementById('doorHeight').value)
+            };
+            const car = {
+                length: parseFloat(document.getElementById('carLength').value),
+                width: parseFloat(document.getElementById('carWidth').value),
+                height: parseFloat(document.getElementById('carHeight').value)
+            };
+            const objDims = [
+                parseFloat(document.getElementById('objLength').value) || 0,
+                parseFloat(document.getElementById('objWidth').value) || 0,
+                parseFloat(document.getElementById('objHeight').value) || 0
+            ];
+            if (objDims.some(d => d <= 0)) {
+                alert('请输入物体尺寸！');
+                return;
+            }
+            const doorResult = canPassThroughDoor(objDims, door);
+            const carResult = canFitInCar(objDims, car);
+            const canEnter = doorResult.pass && carResult.fit;
+            const resultBox = document.getElementById('resultBox');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            resultBox.style.display = 'block';
+            resultBox.className = 'result-box ' + (canEnter ? 'success' : 'fail');
+            if (canEnter) {
+                resultTitle.innerHTML = '✅ 可以进入电梯';
+                resultMessage.textContent = '恭喜！该物体可以通过电梯门并放入轿厢。';
+            } else if (!doorResult.pass) {
+                resultTitle.innerHTML = '❌ 无法通过电梯门';
+                resultMessage.textContent = '物体尺寸过大，无法通过电梯门。';
+            } else {
+                resultTitle.innerHTML = '❌ 无法放入轿厢';
+                resultMessage.textContent = '物体可通过门，但无法在轿厢内放置。';
+            }
+            document.getElementById('resultDetails').style.display = 'block';
+            document.getElementById('doorPass').innerHTML = doorResult.pass 
+                ? '<span class="status-badge success">✅ 可以通过</span>' 
+                : '<span class="status-badge fail">❌ 无法通过</span>';
+            document.getElementById('passMethod').textContent = doorResult.method || '—';
+            document.getElementById('carFit').innerHTML = carResult.fit 
+                ? '<span class="status-badge success">✅ 可以放入</span>' 
+                : '<span class="status-badge fail">❌ 无法放入</span>';
+            document.getElementById('fitMethod').textContent = carResult.method || '—';
+            document.getElementById('visualization').style.display = 'block';
+            document.getElementById('placeholder').style.display = 'none';
+            drawDoorVisualization(door, objDims, doorResult.pass, doorResult.angle, doorResult.dimensions);
+            drawCarTopView(car, objDims, carResult.rotation, carResult.fit);
+            drawCarSideView(car, objDims, carResult.rotation, carResult.fit);
+            drawCar3DView(car, objDims, carResult.rotation, carResult.fit);
+        }
+        function drawDoorVisualization(door, objDims, canPass, angle, dimensions) {
+            const canvas = document.getElementById('doorCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const scale = Math.min(canvas.width / door.width, canvas.height / door.height) * 0.6;
+            const centerX = canvas.width / 2;
+            const groundY = canvas.height - 15;
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.3)';
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            const doorW = door.width * scale;
+            const doorH = door.height * scale;
+            ctx.fillRect(centerX - doorW / 2, groundY - doorH, doorW, doorH);
+            ctx.strokeRect(centerX - doorW / 2, groundY - doorH, doorW, doorH);
+            if (canPass && dimensions) {
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.6)';
+                ctx.strokeStyle = '#c0392b';
+                const objW = dimensions[0] * scale;
+                const objH = dimensions[1] * scale;
+                ctx.save();
+                ctx.translate(centerX, groundY - doorH - objH / 2 - 10);
+                ctx.rotate(-angle * Math.PI / 180);
+                ctx.fillRect(-objW / 2, -objH / 2, objW, objH);
+                ctx.strokeRect(-objW / 2, -objH / 2, objW, objH);
+                ctx.restore();
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`门宽：${door.width.toFixed(0)}cm`, centerX, groundY + 18);
+            }
+        }
+        function drawCarTopView(car, objDims, rotation, canFit) {
+            const canvas = document.getElementById('carTopCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 40;
+            const availW = canvas.width - padding * 2;
+            const availH = canvas.height - padding * 2;
+            const scale = Math.min(availW / car.length, availH / car.width) * 0.75;
+            const carW = car.length * scale;
+            const carH = car.width * scale;
+            const startX = padding + (availW - carW) / 2;
+            const startY = padding + (availH - carH) / 2;
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.fillRect(startX, startY, carW, carH);
+            ctx.strokeRect(startX, startY, carW, carH);
+            if (canFit && rotation) {
+                const [l, w, h] = rotation;
+                const objL = l * scale;
+                const objW = w * scale;
+                const objX = startX + (carW - objL) / 2;
+                const objY = startY + (carH - objW) / 2;
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.7)';
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 2;
+                ctx.fillRect(objX, objY, objL, objW);
+                ctx.strokeRect(objX, objY, objL, objW);
+            }
+        }
+        function drawCarSideView(car, objDims, rotation, canFit) {
+            const canvas = document.getElementById('carSideCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const padding = 40;
+            const availW = canvas.width - padding * 2;
+            const availH = canvas.height - padding * 2;
+            const scale = Math.min(availW / car.length, availH / car.height) * 0.75;
+            const carW = car.length * scale;
+            const carH = car.height * scale;
+            const startX = padding + (availW - carW) / 2;
+            const groundY = padding + availH;
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.fillRect(startX, groundY - carH, carW, carH);
+            ctx.strokeRect(startX, groundY - carH, carW, carH);
+            if (canFit && rotation) {
+                const [l, w, h] = rotation;
+                const objL = l * scale;
+                const objH = h * scale;
+                const objX = startX + (carW - objL) / 2;
+                const objY = groundY - objH;
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.7)';
+                ctx.strokeStyle = '#c0392b';
+                ctx.lineWidth = 2;
+                ctx.fillRect(objX, objY, objL, objH);
+                ctx.strokeRect(objX, objY, objL, objH);
+            }
+        }
+        function drawCar3DView(car, objDims, rotation, canFit) {
+            const canvas = document.getElementById('car3dCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2 + 20;
+            const scale = 0.5;
+            const isoAngle = 30 * Math.PI / 180;
+            const cosA = Math.cos(isoAngle);
+            const sinA = Math.sin(isoAngle);
+            const carL = car.length * scale;
+            const carW = car.width * scale;
+            const carH = car.height * scale * 0.5;
+            function project(x, y, z) {
+                const isoX = (x - y) * cosA;
+                const isoY = (x + y) * sinA - z;
+                return { x: centerX + isoX, y: centerY + isoY };
+            }
+            const carVerts = [
+                project(-carL/2, -carW/2, 0), project(carL/2, -carW/2, 0),
+                project(carL/2, carW/2, 0), project(-carL/2, carW/2, 0),
+                project(-carL/2, -carW/2, carH), project(carL/2, -carW/2, carH),
+                project(carL/2, carW/2, carH), project(-carL/2, carW/2, carH),
+            ];
+            ctx.fillStyle = 'rgba(102, 126, 234, 0.15)';
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(carVerts[0].x, carVerts[0].y);
+            ctx.lineTo(carVerts[1].x, carVerts[1].y);
+            ctx.lineTo(carVerts[2].x, carVerts[2].y);
+            ctx.lineTo(carVerts[3].x, carVerts[3].y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(carVerts[0].x, carVerts[0].y); ctx.lineTo(carVerts[4].x, carVerts[4].y);
+            ctx.moveTo(carVerts[1].x, carVerts[1].y); ctx.lineTo(carVerts[5].x, carVerts[5].y);
+            ctx.moveTo(carVerts[2].x, carVerts[2].y); ctx.lineTo(carVerts[6].x, carVerts[6].y);
+            ctx.moveTo(carVerts[3].x, carVerts[3].y); ctx.lineTo(carVerts[7].x, carVerts[7].y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(carVerts[4].x, carVerts[4].y);
+            ctx.lineTo(carVerts[5].x, carVerts[5].y);
+            ctx.lineTo(carVerts[6].x, carVerts[6].y);
+            ctx.lineTo(carVerts[7].x, carVerts[7].y);
+            ctx.closePath();
+            ctx.stroke();
+            if (canFit && rotation) {
+                const [l, w, h] = rotation;
+                const objL = l * scale;
+                const objW = w * scale;
+                const objH = h * scale * 0.5;
+                const objVerts = [
+                    project(-objL/2, -objW/2, 0), project(objL/2, -objW/2, 0),
+                    project(objL/2, objW/2, 0), project(-objL/2, objW/2, 0),
+                    project(-objL/2, -objW/2, objH), project(objL/2, -objW/2, objH),
+                    project(objL/2, objW/2, objH), project(-objL/2, objW/2, objH),
+                ];
+                ctx.fillStyle = 'rgba(235, 51, 73, 0.7)';
+                ctx.strokeStyle = '#c0392b';
+                ctx.beginPath();
+                ctx.moveTo(objVerts[0].x, objVerts[0].y);
+                ctx.lineTo(objVerts[1].x, objVerts[1].y);
+                ctx.lineTo(objVerts[2].x, objVerts[2].y);
+                ctx.lineTo(objVerts[3].x, objVerts[3].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(objVerts[0].x, objVerts[0].y); ctx.lineTo(objVerts[4].x, objVerts[4].y);
+                ctx.moveTo(objVerts[1].x, objVerts[1].y); ctx.lineTo(objVerts[5].x, objVerts[5].y);
+                ctx.moveTo(objVerts[2].x, objVerts[2].y); ctx.lineTo(objVerts[6].x, objVerts[6].y);
+                ctx.moveTo(objVerts[3].x, objVerts[3].y); ctx.lineTo(objVerts[7].x, objVerts[7].y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(objVerts[4].x, objVerts[4].y);
+                ctx.lineTo(objVerts[5].x, objVerts[5].y);
+                ctx.lineTo(objVerts[6].x, objVerts[6].y);
+                ctx.lineTo(objVerts[7].x, objVerts[7].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkElevator();
+        });
+    </script>
+</body>
+</html>
